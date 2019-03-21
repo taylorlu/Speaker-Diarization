@@ -55,6 +55,7 @@ It's a novel idea that combines `netvlad/ghostvlad` which popularly used in imag
 This project only shows how to generate speaker embeddings using pre-trained model for uis-rnn training in later.</br>
 The training project link to [VGG-Speaker-Recognition](https://github.com/WeidiXie/VGG-Speaker-Recognition) or [VGG-Speaker-Recognition](https://github.com/taylorlu/VGG-Speaker-Recognition)</br>
 ### Dataset
-  http://www.openslr.org/38 contains 855 speakers and 120 utterances of Chinese Mandarin in each, so there are 102600 utterances in total.
-  Generated speaker embeddings matrix can be found in ..
+  http://www.openslr.org/38 contains 855 speakers and 120 utterances of Chinese Mandarin in each, so there are 102600 utterances in total.</br>
+  Generated speaker embeddings matrix can be found in https://drive.google.com/file/d/1QSfIcLA3Cng1FWRRSS8MKb6IBaVj9Xge/view?usp=sharing</br>
+  You can use the data to train uis-rnn directly unless you want to train a new speaker-recognition model based on different dataset such as [VCTK](https://datashare.is.ed.ac.uk/handle/10283/2651) by you own.
  
