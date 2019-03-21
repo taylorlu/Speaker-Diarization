@@ -1,0 +1,9 @@
+*~
+*.pyc
+.DS_Store
+*result.txt
+*.uisrnn
+build/*
+dist/*
+uisrnn.egg-info/*
+.coverage
