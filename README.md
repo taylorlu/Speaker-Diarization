@@ -1,7 +1,7 @@
 # Speaker-Diarization
 
 This project contains:
-* Text-independent Speaker Identification module based VGG-Speaker-recognition
+* Text-independent Speaker Identification module based on VGG-Speaker-recognition
 * Speaker diarization based on UIS-RNN.
 
 ## Prerequisites
