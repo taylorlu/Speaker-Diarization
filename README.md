@@ -53,7 +53,7 @@ Their paper can refer to [UTTERANCE-LEVEL AGGREGATION FOR SPEAKER RECOGNITION IN
 It's a novel idea that combines `netvlad/ghostvlad` which popularly used in image recognition to speaker recognition, the state-of-the-art in the past was `i-vector` based, which depended on the `GMM` model and `pLDA`.
 
 This project only shows how to generate speaker embeddings using pre-trained model for uis-rnn training in later.</br>
-The training project link to [VGG-Speaker-Recognition](https://github.com/WeidiXie/VGG-Speaker-Recognition) or [VGG-Speaker-Recognition](https://github.com/taylorlu/VGG-Speaker-Recognition)</br>
+The training project link to [VGG-Speaker-Recognition](https://github.com/WeidiXie/VGG-Speaker-Recognition) or my [VGG-Speaker-Recognition](https://github.com/taylorlu/VGG-Speaker-Recognition)</br>
 #### Dataset
   http://www.openslr.org/38 contains 855 speakers and 120 utterances of Chinese Mandarin in each, so there are 102600 utterances in total.</br>
   Generated speaker embeddings matrix can be found in https://drive.google.com/file/d/1QSfIcLA3Cng1FWRRSS8MKb6IBaVj9Xge/view?usp=sharing</br>
