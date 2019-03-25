@@ -5,7 +5,6 @@ import sys
 import numpy as np
 import librosa
 
-sys.path.append('../tool')
 import toolkits
 import utils as ut
 
