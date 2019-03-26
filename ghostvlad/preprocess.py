@@ -16,7 +16,7 @@ import argparse
 parser = argparse.ArgumentParser()
 # set up training configuration.
 parser.add_argument('--gpu', default='', type=str)
-parser.add_argument('--resume', default=r'model/weights.h5', type=str)
+parser.add_argument('--resume', default=r'pretrained/weights.h5', type=str)
 parser.add_argument('--data_path', default='4persons', type=str)
 # set up network configuration.
 parser.add_argument('--net', default='resnet34s', choices=['resnet34s', 'resnet34l'], type=str)
@@ -38,8 +38,12 @@ def load_wav(vid_path, sr):
     wav, sr_ret = librosa.load(vid_path, sr=sr)
     assert sr_ret == sr
 
-    extended_wav = np.append(wav, wav[::-1])
-    return extended_wav
+    intervals = librosa.effects.split(wav, top_db=20)
+    wav_output = []
+    for sliced in intervals:
+      wav_output.extend(wav[sliced[0]:sliced[1]])
+    wav_output = np.array(wav_output)
+    return wav_output
 
 def lin_spectogram_from_wav(wav, hop_length, win_length, n_fft=1024):
     linear = librosa.stft(wav, n_fft=n_fft, win_length=win_length, hop_length=hop_length) # linear spectrogram

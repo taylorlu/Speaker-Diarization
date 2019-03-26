@@ -5,7 +5,7 @@ import sys
 import numpy as np
 
 import toolkits
-import utils as ut
+import preprocess
 
 import pdb
 # ===========================================
@@ -94,10 +94,10 @@ def main():
     # because each sample is of different lengths.
     feats = []
     for ID in unique_list:
-        specs = ut.load_data(ID, win_length=params['win_length'], sr=params['sampling_rate'],
+        specs = preprocess.load_data(ID, win_length=params['win_length'], sr=params['sampling_rate'],
                              hop_length=params['hop_length'], n_fft=params['nfft'],
-                             spec_len=params['spec_len'], mode='eval')
-        specs = np.expand_dims(np.expand_dims(specs, 0), -1)
+                             spec_len=params['spec_len'])
+        specs = np.expand_dims(np.expand_dims(specs[0], 0), -1)
     
         v = network_eval.predict(specs)
         feats += [v]
