@@ -17,7 +17,7 @@ import argparse
 parser = argparse.ArgumentParser()
 # set up training configuration.
 parser.add_argument('--gpu', default='', type=str)
-parser.add_argument('--resume', default=r'model/weights.h5', type=str)
+parser.add_argument('--resume', default=r'ghostvlad/pretrained/weights.h5', type=str)
 parser.add_argument('--data_path', default='4persons', type=str)
 # set up network configuration.
 parser.add_argument('--net', default='resnet34s', choices=['resnet34s', 'resnet34l'], type=str)
@@ -91,17 +91,23 @@ def lin_spectogram_from_wav(wav, hop_length, win_length, n_fft=1024):
     linear = librosa.stft(wav, n_fft=n_fft, win_length=win_length, hop_length=hop_length) # linear spectrogram
     return linear.T
 
-def load_data(path, win_length=400, sr=16000, hop_length=160, n_fft=512, embedding_per_second=0.5):
+
+# 0s        1s        2s                  4s                  6s
+# |-------------------|-------------------|-------------------|
+# |-------------------|
+#           |-------------------|
+#                     |-------------------|
+#                               |-------------------|
+def load_data(path, win_length=400, sr=16000, hop_length=160, n_fft=512, embedding_per_second=0.5, overlap_rate=0.5):
     wav, intervals = load_wav(path, sr=sr)
     linear_spect = lin_spectogram_from_wav(wav, hop_length, win_length, n_fft)
     mag, _ = librosa.magphase(linear_spect)  # magnitude
     mag_T = mag.T
     freq, time = mag_T.shape
     spec_mag = mag_T
-    print('freq = {}, time = {}'.format(freq, time))
 
     spec_len = int(sr//hop_length//embedding_per_second)
-    spec_hop_len = spec_len//4
+    spec_hop_len = int(spec_len*(1-overlap_rate))
 
     cur_slide = 0
     utterances_spec = []
@@ -136,7 +142,7 @@ def similar(matrix):  # calc d-vectors similarity in pretty format output.
         print("\n")
 
 
-def main():
+def main(wav_path):
 
     # gpu configuration
     toolkits.initialize_GPU(args)
@@ -154,7 +160,7 @@ def main():
     network_eval = spkModel.vggvox_resnet2d_icassp(input_dim=params['dim'],
                                                 num_class=params['n_classes'],
                                                 mode='eval', args=args)
-    network_eval.load_weights(os.path.join(r'ghostvlad/pretrained/weights.h5'), by_name=True)
+    network_eval.load_weights(args.resume, by_name=True)
 
 
     model_args, _, inference_args = uisrnn.parse_arguments()
@@ -162,13 +168,10 @@ def main():
     uisrnnModel = uisrnn.UISRNN(model_args)
     uisrnnModel.load(SAVED_MODEL_NAME)
 
-
-    specs, intervals = load_data(r'E:\PPDownload\rmdmy_diarization.wav')
-    # specs, intervals = load_data(r'E:\PPDownload\videoplayback.wav')
-    # specs, intervals = load_data(r'D:\PythonSpace\Speaker-Diarization\ghostvlad\4persons\yyy.wav')
+    embedding_per_second = 0.5
+    overlap_rate = 0.5
+    specs, intervals = load_data(wav_path, embedding_per_second=embedding_per_second, overlap_rate=overlap_rate)
     mapTable, keys = genMap(intervals)
-    print(mapTable)
-    print(keys)
 
     feats = []
     for spec in specs:
@@ -177,15 +180,13 @@ def main():
         feats += [v]
 
     feats = np.array(feats)[:,0,:].astype(float)  # [splits, embedding dim]
-    # print(feats.shape)
-    # similar(feats)
     predicted_label = uisrnnModel.predict(feats, inference_args)
-    print(predicted_label)
 
-    time_spec_rate = 500 # speaker embedding every 500ms
+    time_spec_rate = int(1000*(1.0/embedding_per_second)*(1.0-overlap_rate)) # speaker embedding every ?ms
+    center_duration = int(1000*(1.0/embedding_per_second)//2)
     speakerSlice = arrangeResult(predicted_label, time_spec_rate)
 
-    for spk,periods in speakerSlice.items():
+    for spk,periods in speakerSlice.items():    # time map to orgin wav(contains mute)
         for tid, period in enumerate(periods):
             s = 0
             e = 0
@@ -201,29 +202,17 @@ def main():
 
             speakerSlice[spk][tid] = (s,e)
 
-    print(speakerSlice)
-
     for spk,periods in speakerSlice.items():
         print('========= ' + str(spk) + ' =========')
         for tid, period in enumerate(periods):
             s, e = speakerSlice[spk][tid]
-            s = fmtTime(s+1000)
-            e = fmtTime(e+1000)
+            if(spk==0 and tid==0):    # except the first slice
+                s = fmtTime(s)
+            else:
+                s = fmtTime(s+center_duration)  # change point moves to the center of the slice
+            e = fmtTime(e+center_duration)
             print(s+' ==> '+e)
 
-    # data_path = r'D:\PythonSpace\Speaker-Diarization\ghostvlad\4persons'
-    # total_list = [os.path.join(data_path, file) for file in os.listdir(data_path)]
-    # unique_list = np.unique(total_list)
-    # feats = []
-    # for ID in unique_list:
-    #     specs = load_data(ID)[0]
-    #     specs = np.expand_dims(np.expand_dims(specs, 0), -1)
-    
-    #     v = network_eval.predict(specs)
-    #     feats += [v]
-    
-    # feats = np.array(feats)[:,0,:]
-    # similar(feats)
 
 if __name__ == '__main__':
-  main()
+    main(r'wavs/rmdmy.wav')
