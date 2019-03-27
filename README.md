@@ -3,7 +3,7 @@
 This project contains:
 * Text-independent Speaker recognition module based on VGG-Speaker-recognition
 * Speaker diarization based on UIS-RNN.</br>
-* *Mainly borrowed from UIS-RNN and VGG-Speaker-recognition, and do some preprocess and postprocess to make everything easier.*
+* *Mainly borrowed from UIS-RNN and VGG-Speaker-recognition, just link the 2 projects by generating speaker embeddings to make everything easier, and also format the output result by concerning the mute segments*
 ## Prerequisites
 1. pytorch
 2. keras
@@ -56,7 +56,7 @@ This project only shows how to generate speaker embeddings using pre-trained mod
 The training project link to [VGG-Speaker-Recognition](https://github.com/WeidiXie/VGG-Speaker-Recognition) or my [VGG-Speaker-Recognition](https://github.com/taylorlu/VGG-Speaker-Recognition)</br>
 #### Dataset
   http://www.openslr.org/38 contains 855 speakers and 120 utterances of Chinese Mandarin in each, so there are 102600 utterances in total.</br>
-  Generated speaker embeddings matrix can be found in https://drive.google.com/file/d/1QSfIcLA3Cng1FWRRSS8MKb6IBaVj9Xge/view?usp=sharing</br>
+  Generated speaker embeddings matrix can be found in https://drive.google.com/file/d/11jsI0dyEMeSG7zkuwnhwtROCVYqXLiYD/view</br>
   You can use the data to train uis-rnn directly unless you want to train a new speaker-recognition model based on different dataset such as [VCTK](https://datashare.is.ed.ac.uk/handle/10283/2651) by you own.
  
 ### 2. Speaker diarization.</br>
@@ -79,3 +79,23 @@ When I added an insignificate bias (e.g. 0.00001) to each element of vectors, er
     Iter: 20  	Training Loss: -644.9244    
     Negative Log Likelihood: 1.7123	Sigma2 Prior: -646.6375	Regularization: 0.0007
 
+#### Clustering
+`python speakerDiarization.py`
+
+The Result is showing as below:(3 speakers)
+
+    ========= 0 =========
+    0:00.288 ==> 0:04.544
+    0:09.48 ==> 0:13.296
+    ========= 1 =========
+    0:04.544 ==> 0:09.48
+    0:13.296 ==> 0:20.720
+    0:28.248 ==> 0:34.641
+    0:40.625 ==> 0:41.977
+    ========= 2 =========
+    0:20.720 ==> 0:28.248
+    0:34.641 ==> 0:40.625
+
+The final result is influenced by the size of each window and the overlap rate.
+When the overlap is too large, the uis-rnn perhaps generates fewer speakers since the speaker embeddings changed smoothly, otherwise will generate more speakers.
+And also, the window size cannot be too short, it must contain enough information to generate more discrimitive speaker embeddings.
