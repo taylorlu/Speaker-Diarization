@@ -30,21 +30,6 @@ parser.add_argument('--test_type', default='normal', choices=['normal', 'hard', 
 global args
 args = parser.parse_args()
 
-def similar(matrix):  # calc d-vectors similarity in pretty format output.
-    ids = matrix.shape[0]
-    for i in range(ids):
-        for j in range(ids):
-            dist = matrix[i,:]*matrix[j,:]
-            dist = np.linalg.norm(matrix[i,:] - matrix[j,:])
-            print('%.2f  ' % dist, end='')
-            if((j+1)%3==0 and j!=0):
-                print("| ", end='')
-        if((i+1)%3==0 and i!=0):
-            print('\n')
-            print("*"*80, end='')
-        print("\n")
-
-
 def main():
 
     # gpu configuration
@@ -64,7 +49,7 @@ def main():
     # construct the data generator.
     params = {'dim': (257, None, 1),
               'nfft': 512,
-              'spec_len': 250,
+              'min_slice': 720,
               'win_length': 400,
               'hop_length': 160,
               'n_classes': 5994,
@@ -94,16 +79,17 @@ def main():
     # because each sample is of different lengths.
     feats = []
     for ID in unique_list:
-        specs = preprocess.load_data(ID, win_length=params['win_length'], sr=params['sampling_rate'],
+        specs = preprocess.load_data(ID, split=False, win_length=params['win_length'], sr=params['sampling_rate'],
                              hop_length=params['hop_length'], n_fft=params['nfft'],
-                             spec_len=params['spec_len'])
+                             min_slice=params['min_slice'])
+        print(len(specs))
         specs = np.expand_dims(np.expand_dims(specs[0], 0), -1)
     
         v = network_eval.predict(specs)
         feats += [v]
-    
+
     feats = np.array(feats)[:,0,:]
-    similar(feats)
+    preprocess.similar(feats)
 
 
 if __name__ == "__main__":

@@ -31,6 +31,20 @@ parser.add_argument('--test_type', default='normal', choices=['normal', 'hard', 
 global args
 args = parser.parse_args()
 
+def similar(matrix):  # calc speaker-embeddings similarity in pretty format output.
+    ids = matrix.shape[0]
+    for i in range(ids):
+        for j in range(ids):
+            dist = matrix[i,:]*matrix[j,:]
+            dist = np.linalg.norm(matrix[i,:] - matrix[j,:])
+            print('%.2f  ' % dist, end='')
+            if((j+1)%3==0 and j!=0):
+                print("| ", end='')
+        if((i+1)%3==0 and i!=0):
+            print('\n')
+            print("*"*80, end='')
+        print("\n")
+
 # ===============================================
 #       code from Arsha for loading data.
 # ===============================================
@@ -49,7 +63,7 @@ def lin_spectogram_from_wav(wav, hop_length, win_length, n_fft=1024):
     linear = librosa.stft(wav, n_fft=n_fft, win_length=win_length, hop_length=hop_length) # linear spectrogram
     return linear.T
 
-def load_data(path, split=False, win_length=400, sr=16000, hop_length=160, n_fft=512, spec_len=250):
+def load_data(path, split=False, win_length=400, sr=16000, hop_length=160, n_fft=512, min_slice=720):
     wav = load_wav(path, sr=sr)
     linear_spect = lin_spectogram_from_wav(wav, hop_length, win_length, n_fft)
     mag, _ = librosa.magphase(linear_spect)  # magnitude
@@ -57,23 +71,23 @@ def load_data(path, split=False, win_length=400, sr=16000, hop_length=160, n_fft
     freq, time = mag_T.shape
     spec_mag = mag_T
 
-    cur_slide = 0
     utterances_spec = []
 
     if(split):
-        while(True):  # slide window.
-            randtime = np.random.randint(spec_len - spec_len//4, spec_len + spec_len//4)
-            if(cur_slide + randtime > time):
-                break
-            spec_mag = mag_T[:, cur_slide : cur_slide+randtime]
-            
+        minSpec = min_slice//(1000//(sr//hop_length)) # The minimum timestep of each slice in spectrum
+        randStarts = np.random.randint(0,time, 20)   # generate 20 slices at most.
+        for start in randStarts:
+            if(time-start<=minSpec):
+                continue
+            randDuration = np.random.randint(minSpec, time-start)
+            spec_mag = mag_T[:, start:start+randDuration]
+
             # preprocessing, subtract mean, divided by time-wise var
             mu = np.mean(spec_mag, 0, keepdims=True)
             std = np.std(spec_mag, 0, keepdims=True)
             spec_mag = (spec_mag - mu) / (std + 1e-5)
             utterances_spec.append(spec_mag)
 
-            cur_slide += randtime
     else:
         # preprocessing, subtract mean, divided by time-wise var
         mu = np.mean(spec_mag, 0, keepdims=True)
@@ -102,7 +116,7 @@ def main():
     # construct the data generator.
     params = {'dim': (257, None, 1),
               'nfft': 512,
-              'spec_len': 250,
+              'min_slice': 720,
               'win_length': 400,
               'hop_length': 160,
               'n_classes': 5994,
@@ -136,19 +150,19 @@ def main():
     SRC_PATH = r'/data/dataset/SpkWav120'
 
     wavDir = os.listdir(SRC_PATH)
-    for spkDir in wavDir:   # Each speaker's directory
+    for i,spkDir in enumerate(wavDir):   # Each speaker's directory
 
         spk = spkDir    # speaker name
         wavPath = os.path.join(SRC_PATH, spkDir, 'audio')
-        print('Processing speaker : {}'.format(spk))
+        print('Processing speaker({}) : {}'.format(i, spk))
 
         for wav in os.listdir(wavPath): # wavfile
 
             utter_path = os.path.join(wavPath, wav)
             feats = []
-            specs = load_data(utter_path, split=False, win_length=params['win_length'], sr=params['sampling_rate'],
+            specs = load_data(utter_path, split=True, win_length=params['win_length'], sr=params['sampling_rate'],
                                  hop_length=params['hop_length'], n_fft=params['nfft'],
-                                 spec_len=params['spec_len'])
+                                 min_slice=params['min_slice'])
             for spec in specs:
                 spec = np.expand_dims(np.expand_dims(spec, 0), -1)
                 v = network_eval.predict(spec)
