@@ -75,7 +75,7 @@ def load_data(path, split=False, win_length=400, sr=16000, hop_length=160, n_fft
 
     if(split):
         minSpec = min_slice//(1000//(sr//hop_length)) # The minimum timestep of each slice in spectrum
-        randStarts = np.random.randint(0,time, 20)   # generate 20 slices at most.
+        randStarts = np.random.randint(0,time, 10)   # generate 10 slices at most.
         for start in randStarts:
             if(time-start<=minSpec):
                 continue
@@ -150,8 +150,8 @@ def main():
     SRC_PATH = r'/data/dataset/SpkWav120'
 
     wavDir = os.listdir(SRC_PATH)
+    wavDir.sort()
     for i,spkDir in enumerate(wavDir):   # Each speaker's directory
-
         spk = spkDir    # speaker name
         wavPath = os.path.join(SRC_PATH, spkDir, 'audio')
         print('Processing speaker({}) : {}'.format(i, spk))
@@ -163,6 +163,8 @@ def main():
             specs = load_data(utter_path, split=True, win_length=params['win_length'], sr=params['sampling_rate'],
                                  hop_length=params['hop_length'], n_fft=params['nfft'],
                                  min_slice=params['min_slice'])
+            if(len(specs)<1):
+                continue
             for spec in specs:
                 spec = np.expand_dims(np.expand_dims(spec, 0), -1)
                 v = network_eval.predict(spec)
