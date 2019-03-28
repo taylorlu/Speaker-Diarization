@@ -82,7 +82,6 @@ def main():
         specs = preprocess.load_data(ID, split=False, win_length=params['win_length'], sr=params['sampling_rate'],
                              hop_length=params['hop_length'], n_fft=params['nfft'],
                              min_slice=params['min_slice'])
-        print(len(specs))
         specs = np.expand_dims(np.expand_dims(specs[0], 0), -1)
     
         v = network_eval.predict(specs)
