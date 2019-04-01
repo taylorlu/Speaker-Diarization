@@ -127,21 +127,6 @@ def load_data(path, win_length=400, sr=16000, hop_length=160, n_fft=512, embeddi
 
     return utterances_spec, intervals
 
-def similar(matrix):  # calc d-vectors similarity in pretty format output.
-    ids = matrix.shape[0]
-    for i in range(ids):
-        for j in range(ids):
-            dist = matrix[i,:]*matrix[j,:]
-            dist = np.linalg.norm(matrix[i,:] - matrix[j,:])
-            print('%.2f  ' % dist, end='')
-            if((j+1)%3==0 and j!=0):
-                print("| ", end='')
-        if((i+1)%3==0 and i!=0):
-            print('\n')
-            print("*"*80, end='')
-        print("\n")
-
-
 def main(wav_path):
 
     # gpu configuration
@@ -168,8 +153,8 @@ def main(wav_path):
     uisrnnModel = uisrnn.UISRNN(model_args)
     uisrnnModel.load(SAVED_MODEL_NAME)
 
-    embedding_per_second = 0.5
-    overlap_rate = 0.5
+    embedding_per_second = 0.75
+    overlap_rate = 0.4
     specs, intervals = load_data(wav_path, embedding_per_second=embedding_per_second, overlap_rate=overlap_rate)
     mapTable, keys = genMap(intervals)
 
