@@ -85,16 +85,17 @@ When I added an insignificate bias (e.g. 0.00001) to each element of vectors, er
 The Result is showing as below:(3 speakers)
 
     ========= 0 =========
-    0:00.288 ==> 0:04.544
-    0:09.48 ==> 0:13.296
+    0:00.288 ==> 0:04.406
+    0:07.699 ==> 0:16.461
+    0:33.921 ==> 0:35.8
     ========= 1 =========
-    0:04.544 ==> 0:09.48
-    0:13.296 ==> 0:20.720
-    0:28.248 ==> 0:34.641
-    0:40.625 ==> 0:41.977
+    0:04.406 ==> 0:07.699
+    0:16.461 ==> 0:19.594
+    0:30.371 ==> 0:33.921
+    0:41.19 ==> 0:44.185
     ========= 2 =========
-    0:20.720 ==> 0:28.248
-    0:34.641 ==> 0:40.625
+    0:19.594 ==> 0:30.371
+    0:35.8 ==> 0:41.19
 
 The final result is influenced by the size of each window and the overlap rate.
 When the overlap is too large, the uis-rnn perhaps generates fewer speakers since the speaker embeddings changed smoothly, otherwise will generate more speakers.
