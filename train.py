@@ -20,20 +20,6 @@ import uisrnn
 
 SAVED_MODEL_NAME = 'pretrained/saved_model.uisrnn_benchmark'
 
-def similar(matrix):  # calc d-vectors similarity in pretty format output.
-    ids = matrix.shape[0]
-    for i in range(ids):
-        for j in range(ids):
-            dist = matrix[i,:]*matrix[j,:]
-            dist = np.linalg.norm(matrix[i,:] - matrix[j,:])
-            print('%.2f  ' % dist, end='')
-            if((j+1)%3==0 and j!=0):
-                print("| ", end='')
-        if((i+1)%3==0 and i!=0):
-            print('\n')
-            print("*"*80, end='')
-        print("\n")
-
 
 def diarization_experiment(model_args, training_args, inference_args):
   """Experiment pipeline.
@@ -49,56 +35,22 @@ def diarization_experiment(model_args, training_args, inference_args):
   predicted_labels = []
   test_record = []
 
-  train_data = np.load('./data/toy_training_data.npz')
+  train_data = np.load('./ghostvlad/training_data.npz')
   train_sequence = train_data['train_sequence']
   train_cluster_id = train_data['train_cluster_id']
-  print("train_sequence = {}".format(train_sequence.shape))
-  print("train_sequence = {}".format(train_sequence.dtype))
-  print("train_cluster_id = {}".format(train_cluster_id.shape))
-
-
-  train_data = np.load('./training_data.npz')
-  train_sequence = train_data['train_sequence']
-  train_cluster_id = train_data['train_cluster_id']
-  train_sequence = train_sequence[:,0,:]
-  train_sequence = train_sequence.astype(float)
-  train_sequence += 0.00001
-  train_cluster_id = train_cluster_id[:,0]
-  print("train_sequence = {}".format(train_sequence.shape))
-  print("train_sequence = {}".format(train_sequence.dtype))
-  print("train_cluster_id = {}".format(train_cluster_id.shape))
-  for i in range(10):
-    print(np.linalg.norm(train_sequence[0,:]))
+  train_sequence_list = [seq.astype(float)+0.00001 for seq in train_sequence]
+  train_cluster_id_list = [np.array(cid).astype(str) for cid in train_cluster_id]
 
   model = uisrnn.UISRNN(model_args)
 
-  # print(train_cluster_id[0], train_cluster_id[1], train_cluster_id[2])
-  # print(train_cluster_id[120], train_cluster_id[121], train_cluster_id[122])
-
-  # feats = []
-  # feats += [train_sequence[0,:], train_sequence[1,:], train_sequence[2,:]]
-  # feats += [train_sequence[1200,:], train_sequence[1201,:], train_sequence[1202,:]]
-  # feats += [train_sequence[2400,:], train_sequence[2401,:], train_sequence[2402,:]]
-  # feats += [train_sequence[3600,:], train_sequence[3601,:], train_sequence[3602,:]]
-  # feats = np.array(feats)
-  # similar(feats)
-  # return
-
   # training
-  # model.fit(train_sequence, train_cluster_id, training_args)
-  # model.save(SAVED_MODEL_NAME)
-  # we can also skip training by calling：
-  model.load(SAVED_MODEL_NAME)
+  model.fit(train_sequence, train_sequence_list, train_cluster_id_list)
+  model.save(SAVED_MODEL_NAME)
 
-  
-  test_sequence = train_sequence[1200::15, :]
-  test_sequence = test_sequence[:40,:]
-  test_sequence = test_sequence[::-1,:]
-  print(test_sequence.shape)
-  predicted_label = model.predict(test_sequence, inference_args)
-  print(predicted_label)
   '''
   # testing
+  # we can also skip training by calling：
+  model.load(SAVED_MODEL_NAME)
   for (test_sequence, test_cluster_id) in zip(test_sequences, test_cluster_ids):
     predicted_label = model.predict(test_sequence, inference_args)
     predicted_labels.append(predicted_label)
@@ -125,11 +77,12 @@ def main():
   model_args.rnn_depth = 1
   model_args.rnn_hidden_size = 512
   training_args.enforce_cluster_id_uniqueness = False
-  training_args.batch_size = 40
-  training_args.learning_rate = 1e-3
-  training_args.train_iteration = 50000
+  training_args.batch_size = 30
+  training_args.learning_rate = 1e-4
+  training_args.train_iteration = 3000
+  training_args.num_permutations = 20
   # training_args.grad_max_norm = 5.0
-  training_args.learning_rate_half_life = 8000
+  training_args.learning_rate_half_life = 1000
   diarization_experiment(model_args, training_args, inference_args)
 
 
