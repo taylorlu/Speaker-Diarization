@@ -57,8 +57,10 @@ This project only shows how to generate speaker embeddings using pre-trained mod
 The training project link to [VGG-Speaker-Recognition](https://github.com/WeidiXie/VGG-Speaker-Recognition)
 #### Dataset
   1. http://www.openslr.org/38 contains 855 speakers and 120 utterances of Chinese Mandarin in each, so there are 102600 utterances in total.</br>
-  2. [VCTK](https://datashare.is.ed.ac.uk/handle/10283/2651) contrains 109 speakers of English.</br>
-  **How to generate**:</br>
+  2. [VCTK](https://datashare.is.ed.ac.uk/handle/10283/2651) contains 109 speakers of English.</br>
+  3. [VoxCeleb1](http://www.robots.ox.ac.uk/~vgg/data/voxceleb/vox1.html) contains 1251 speakers.</br>
+  4. [VoxCeleb2](http://www.robots.ox.ac.uk/~vgg/data/voxceleb/vox2.html) contains 6112 speakers.</br>
+  **How to generate speaker embeddings for the next training stage:**</br>
   `python generate_embeddings.py` </br>
   You may need to change the dataset path by your own.
  
