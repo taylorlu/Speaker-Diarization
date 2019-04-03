@@ -3,7 +3,7 @@
 This project contains:
 * Text-independent Speaker recognition module based on VGG-Speaker-recognition
 * Speaker diarization based on UIS-RNN.</br>
-* *Mainly borrowed from UIS-RNN and VGG-Speaker-recognition, just link the 2 projects by generating speaker embeddings to make everything easier, and also provide an intuitive displace panel*
+* *Mainly borrowed from UIS-RNN and VGG-Speaker-recognition, just link the 2 projects by generating speaker embeddings to make everything easier, and also provide an intuitive display panel*
 ## Prerequisites
 1. pytorch
 2. keras
