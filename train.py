@@ -44,7 +44,7 @@ def diarization_experiment(model_args, training_args, inference_args):
   model = uisrnn.UISRNN(model_args)
 
   # training
-  model.fit(train_sequence, train_sequence_list, train_cluster_id_list)
+  model.fit(train_sequence_list, train_cluster_id_list, training_args)
   model.save(SAVED_MODEL_NAME)
 
   '''
