@@ -53,6 +53,8 @@ Thanks to the authors of VGG, they are kind enough to provide the code and pre-t
 Their paper can refer to [UTTERANCE-LEVEL AGGREGATION FOR SPEAKER RECOGNITION IN THE WILD](https://arxiv.org/pdf/1902.10107.pdf)</br>
 It's a novel idea that combines `netvlad/ghostvlad` which popularly used in image recognition to speaker recognition, the state-of-the-art in the past was `i-vector` based, which depended on the `GMM` model and `pLDA`.
 
+About VGG speaker model, I have re-implemented in tensorflow, [ghostvlad-speaker](https://github.com/taylorlu/ghostvlad-speaker) and corresponding pretrained model.
+
 This project only shows how to generate speaker embeddings using pre-trained model for uis-rnn training in later.</br>
 The training project link to [VGG-Speaker-Recognition](https://github.com/WeidiXie/VGG-Speaker-Recognition)
 #### Dataset
