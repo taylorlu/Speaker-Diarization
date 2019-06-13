@@ -174,7 +174,7 @@ def main():
     # The feature extraction process has to be done sample-by-sample,
     # because each sample is of different lengths.
 
-    SRC_PATH = r'/data/dataset/SpkWav120'
+    SRC_PATH = args.data_path# r'/data/dataset/SpkWav120'
     path_spk_tuples = prepare_data(SRC_PATH)
     train_sequence = []
     train_cluster_id = []
