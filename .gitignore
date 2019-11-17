@@ -9,4 +9,7 @@ uisrnn.egg-info/*
 .coverage
 *.geany
 *.out
-/.env
+/.env*
+/output.seg
+/wavs
+*egg-info

@@ -21,7 +21,7 @@ with open('README.md', 'r') as file_object:
   LONG_DESCRIPTION = file_object.read()
 
 setuptools.setup(
-    name='uisrnn',
+    name='uisrnn-mega',
     version=VERSION,
     author='Quan Wang',
     author_email='quanw@google.com',

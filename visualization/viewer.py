@@ -1,7 +1,8 @@
 import matplotlib
 import matplotlib.pyplot as plot
 from matplotlib.patches import Rectangle
-from player import AudioPlayer
+
+from .player import AudioPlayer
 
 
 class PlotDiar:
