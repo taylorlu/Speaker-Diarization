@@ -13,12 +13,25 @@
 # limitations under the License.
 """Setup script for the package."""
 
+import os
 import setuptools
 
 VERSION = '0.0.6'
 
+CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
+
+def get_reqs(*fns):
+    lst = []
+    for fn in fns:
+        for package in open(os.path.join(CURRENT_DIR, fn)).readlines():
+            package = package.strip()
+            if not package or package.startswith('#'):
+                continue
+            lst.append(package.strip())
+    return lst
+
 with open('README.md', 'r') as file_object:
-  LONG_DESCRIPTION = file_object.read()
+    LONG_DESCRIPTION = file_object.read()
 
 setuptools.setup(
     name='uisrnn-mega',
@@ -35,4 +48,6 @@ setuptools.setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
     ],
+    zip_safe=False,
+    install_requires=get_reqs('requirements.txt')
 )
