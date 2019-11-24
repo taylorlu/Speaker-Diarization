@@ -1,0 +1,4 @@
+python3.7-minimal
+python3.7-dev
+portaudio19-dev
+virtualenv

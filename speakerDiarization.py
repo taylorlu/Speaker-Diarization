@@ -1,41 +1,25 @@
 
 """A demo script showing how to DIARIZATION ON WAV USING UIS-RNN."""
 
+import os
+import time
+import sys
+
 import numpy as np
 import uisrnn
 import librosa
-import sys
-sys.path.append('ghostvlad')
-sys.path.append('visualization')
-import toolkits
-import model as spkModel
-import os
-from viewer import PlotDiar
 
-# ===========================================
-#        Parse the argument
-# ===========================================
-import argparse
-parser = argparse.ArgumentParser()
-# set up training configuration.
-parser.add_argument('--gpu', default='', type=str)
-parser.add_argument('--resume', default=r'ghostvlad/pretrained/weights.h5', type=str)
-parser.add_argument('--data_path', default='4persons', type=str)
-# set up network configuration.
-parser.add_argument('--net', default='resnet34s', choices=['resnet34s', 'resnet34l'], type=str)
-parser.add_argument('--ghost_cluster', default=2, type=int)
-parser.add_argument('--vlad_cluster', default=8, type=int)
-parser.add_argument('--bottleneck_dim', default=512, type=int)
-parser.add_argument('--aggregation_mode', default='gvlad', choices=['avg', 'vlad', 'gvlad'], type=str)
-# set up learning rate, training loss and optimizer.
-parser.add_argument('--loss', default='softmax', choices=['softmax', 'amsoftmax'], type=str)
-parser.add_argument('--test_type', default='normal', choices=['normal', 'hard', 'extend'], type=str)
+# sys.path.append('ghostvlad')
+# sys.path.append('visualization')
+# import toolkits
+from ghostvlad import toolkits
+from ghostvlad import model as spkModel
 
-global args
-args = parser.parse_args()
+# from viewer import PlotDiar
+from visualization.viewer import PlotDiar
 
-
-SAVED_MODEL_NAME = 'pretrained/saved_model.uisrnn_benchmark'
+BASE_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
+SAVED_MODEL_NAME = os.path.join(BASE_DIR, 'pretrained/saved_model.uisrnn_benchmark')
 
 def append2dict(speakerSlice, spk_period):
     key = list(spk_period.keys())[0]
@@ -102,7 +86,7 @@ def lin_spectogram_from_wav(wav, hop_length, win_length, n_fft=1024):
 #           |-------------------|
 #                     |-------------------|
 #                               |-------------------|
-def load_data(path, win_length=400, sr=16000, hop_length=160, n_fft=512, embedding_per_second=0.5, overlap_rate=0.5):
+def load_data(path, win_length=400, sr=16000, hop_length=160, n_fft=512, embedding_per_second=0.5, overlap_rate=0.5, network_eval=None):
     wav, intervals = load_wav(path, sr=sr)
     linear_spect = lin_spectogram_from_wav(wav, hop_length, win_length, n_fft)
     mag, _ = librosa.magphase(linear_spect)  # magnitude
@@ -115,6 +99,7 @@ def load_data(path, win_length=400, sr=16000, hop_length=160, n_fft=512, embeddi
 
     cur_slide = 0.0
     utterances_spec = []
+    feats = []
 
     while(True):  # slide window.
         if(cur_slide + spec_len > time):
@@ -128,51 +113,109 @@ def load_data(path, win_length=400, sr=16000, hop_length=160, n_fft=512, embeddi
         utterances_spec.append(spec_mag)
 
         cur_slide += spec_hop_len
+        
+        if network_eval is not None:
+            spec = np.expand_dims(np.expand_dims(spec_mag, 0), -1)
+            v = network_eval.predict(spec)
+            feats += [v]
 
-    return utterances_spec, intervals
+    return utterances_spec, intervals, feats
 
-def main(wav_path, embedding_per_second=1.0, overlap_rate=0.5):
+class Args:
+    pass
+    
+def process(wav_path, embedding_per_second=1.0, overlap_rate=0.5, after_shift=0, output_seg=False, show=False, segment_fn='output.seg', args=None):
+
+    if args is None:
+        args = Args()
+        args.gpu = ''
+        args.resume = os.path.join(BASE_DIR, 'ghostvlad/pretrained/weights.h5')
+        args.data_path = '4persons'
+        # set up network configuration.
+        args.net = 'resnet34s' #, choices=['resnet34s', 'resnet34l'], type=str)
+        args.ghost_cluster = 2
+        args.vlad_cluster = 8
+        args.bottleneck_dim = 512
+        args.aggregation_mode = 'gvlad' #, choices=['avg', 'vlad', 'gvlad'], type=str)
+        # set up learning rate, training loss and optimizer.
+        args.loss = 'softmax' #, choices=['softmax', 'amsoftmax'], type=str)
+        args.test_type = 'normal' #, choices=['normal', 'hard', 'extend'], type=str)
 
     # gpu configuration
     toolkits.initialize_GPU(args)
 
-    params = {'dim': (257, None, 1),
-              'nfft': 512,
-              'spec_len': 250,
-              'win_length': 400,
-              'hop_length': 160,
-              'n_classes': 5994,
-              'sampling_rate': 16000,
-              'normalize': True,
-              }
-
+    params = {
+        'dim': (257, None, 1),
+        'nfft': 512,
+        'spec_len': 250,
+        'win_length': 400,
+        'hop_length': 160,
+        'n_classes': 5994,
+        'sampling_rate': 16000,
+        'normalize': True,
+    }
+    t0 = time.time()
     network_eval = spkModel.vggvox_resnet2d_icassp(input_dim=params['dim'],
                                                 num_class=params['n_classes'],
                                                 mode='eval', args=args)
     network_eval.load_weights(args.resume, by_name=True)
 
-
-    model_args, _, inference_args = uisrnn.parse_arguments()
+    model_args = Args()
     model_args.observation_dim = 512
+    model_args.rnn_hidden_size = 512
+    model_args.rnn_depth = 1
+    model_args.rnn_dropout = 0.2
+    model_args.transition_bias = None
+    model_args.crp_alpha = 1.0
+    model_args.sigma2 = None
+    model_args.verbosity = 2
+    
+    inference_args = Args()
+    inference_args.beam_size = 10
+    inference_args.look_ahead = 1
+    inference_args.test_iteration = 2
+
+    # model_args, _, inference_args = uisrnn.parse_arguments()
+    # model_args.observation_dim = 512
     uisrnnModel = uisrnn.UISRNN(model_args)
     uisrnnModel.load(SAVED_MODEL_NAME)
+    td = time.time() - t0
+    print('Load model time:', td)
 
-    specs, intervals = load_data(wav_path, embedding_per_second=embedding_per_second, overlap_rate=overlap_rate)
+    print('Loading data...')
+    t0 = time.time()
+    # specs, intervals = load_data(wav_path, embedding_per_second=embedding_per_second, overlap_rate=overlap_rate)
+    specs, intervals, feats = load_data(wav_path, embedding_per_second=embedding_per_second, overlap_rate=overlap_rate, network_eval=network_eval)
     mapTable, keys = genMap(intervals)
+    td = time.time() - t0
+    print('Load data time:', td)
 
-    feats = []
-    for spec in specs:
-        spec = np.expand_dims(np.expand_dims(spec, 0), -1)
-        v = network_eval.predict(spec)
-        feats += [v]
-
+    print('Generating feats...')
+    t0 = time.time()
+    # feats = []
+    # for spec in specs:
+        # spec = np.expand_dims(np.expand_dims(spec, 0), -1)
+        # v = network_eval.predict(spec)
+        # feats += [v]
     feats = np.array(feats)[:,0,:].astype(float)  # [splits, embedding dim]
-    predicted_label = uisrnnModel.predict(feats, inference_args)
+    td = time.time() - t0
+    print('Load feat time:', td)
 
+    print('inference_args:', inference_args)
+    print('running uisrnn.predict...')
+    t0 = time.time()
+    predicted_label = uisrnnModel.predict(feats, inference_args)
+    td = time.time() - t0
+    print('Load uisrnn.predict time:', td)
+
+    t0 = time.time()
     time_spec_rate = 1000*(1.0/embedding_per_second)*(1.0-overlap_rate) # speaker embedding every ?ms
     center_duration = int(1000*(1.0/embedding_per_second)//2)
     speakerSlice = arrangeResult(predicted_label, time_spec_rate)
+    td = time.time() - t0
+    print('Load arrangeResult time:', td)
 
+    t0 = time.time()
     for spk,timeDicts in speakerSlice.items():    # time map to orgin wav(contains mute)
         for tid,timeDict in enumerate(timeDicts):
             s = 0
@@ -189,20 +232,55 @@ def main(wav_path, embedding_per_second=1.0, overlap_rate=0.5):
 
             speakerSlice[spk][tid]['start'] = s
             speakerSlice[spk][tid]['stop'] = e
+    print('Load speakerSlicing time:', td)
 
-    for spk,timeDicts in speakerSlice.items():
-        print('========= ' + str(spk) + ' =========')
+    audacity_segments = []
+    for spk, timeDicts in speakerSlice.items():
         for timeDict in timeDicts:
             s = timeDict['start']
             e = timeDict['stop']
-            s = fmtTime(s)  # change point moves to the center of the slice
-            e = fmtTime(e)
-            print(s+' ==> '+e)
+            s = s * 1/1000.
+            e = e * 1/1000.
+            s += after_shift
+            e += after_shift
+            audacity_segments.append((s, e, spk))
 
-    p = PlotDiar(map=speakerSlice, wav=wav_path, gui=True, size=(25, 6))
-    p.draw()
-    p.plot.show()
+    if output_seg:
+        with open(segment_fn, 'w') as fout:
+            for s, e, l in audacity_segments:
+                fout.write('%s\t%s\t%s\n' % (round(s, 6), round(e, 6), spk))
+
+    if show:
+        p = PlotDiar(map=speakerSlice, wav=wav_path, gui=True, size=(25, 6))
+        p.draw()
+        p.plot.show()
+
+    return audacity_segments
 
 if __name__ == '__main__':
-    main(r'wavs/rmdmy.wav', embedding_per_second=1.2, overlap_rate=0.4)
 
+    # ===========================================
+    #        Parse the argument
+    # ===========================================
+    import argparse
+    parser = argparse.ArgumentParser()
+    # set up training configuration.
+    parser.add_argument('--gpu', default='', type=str)
+    parser.add_argument('--resume', default=r'ghostvlad/pretrained/weights.h5', type=str)
+    parser.add_argument('--data_path', default='4persons', type=str)
+    # set up network configuration.
+    parser.add_argument('--net', default='resnet34s', choices=['resnet34s', 'resnet34l'], type=str)
+    parser.add_argument('--ghost_cluster', default=2, type=int)
+    parser.add_argument('--vlad_cluster', default=8, type=int)
+    parser.add_argument('--bottleneck_dim', default=512, type=int)
+    parser.add_argument('--aggregation_mode', default='gvlad', choices=['avg', 'vlad', 'gvlad'], type=str)
+    # set up learning rate, training loss and optimizer.
+    parser.add_argument('--loss', default='softmax', choices=['softmax', 'amsoftmax'], type=str)
+    parser.add_argument('--test_type', default='normal', choices=['normal', 'hard', 'extend'], type=str)
+
+    args = parser.parse_args()
+
+    # fn = r'wavs/rmdmy.wav'
+    # fn = 'wavs/sample1.wav'
+    fn = 'wavs/Babylon_Bee_Ep19_nonsub.wav'
+    process(fn, embedding_per_second=1.2, overlap_rate=0.4, output_seg=0, show=0, args=args)

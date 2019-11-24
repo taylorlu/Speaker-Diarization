@@ -7,3 +7,9 @@ build/*
 dist/*
 uisrnn.egg-info/*
 .coverage
+*.geany
+*.out
+/.env*
+/output.seg
+/wavs
+*egg-info

@@ -3,7 +3,7 @@ import numpy as np
 
 def initialize_GPU(args):
     # Initialize GPUs
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True

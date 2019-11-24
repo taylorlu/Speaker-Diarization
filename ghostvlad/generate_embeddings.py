@@ -8,27 +8,6 @@ import librosa
 import toolkits
 import random
 
-# ===========================================
-#        Parse the argument
-# ===========================================
-import argparse
-parser = argparse.ArgumentParser()
-# set up training configuration.
-parser.add_argument('--gpu', default='', type=str)
-parser.add_argument('--resume', default=r'pretrained/weights.h5', type=str)
-parser.add_argument('--data_path', default='4persons', type=str)
-# set up network configuration.
-parser.add_argument('--net', default='resnet34s', choices=['resnet34s', 'resnet34l'], type=str)
-parser.add_argument('--ghost_cluster', default=2, type=int)
-parser.add_argument('--vlad_cluster', default=8, type=int)
-parser.add_argument('--bottleneck_dim', default=512, type=int)
-parser.add_argument('--aggregation_mode', default='gvlad', choices=['avg', 'vlad', 'gvlad'], type=str)
-# set up learning rate, training loss and optimizer.
-parser.add_argument('--loss', default='softmax', choices=['softmax', 'amsoftmax'], type=str)
-parser.add_argument('--test_type', default='normal', choices=['normal', 'hard', 'extend'], type=str)
-
-global args
-args = parser.parse_args()
 
 def similar(matrix):  # calc speaker-embeddings similarity in pretty format output.
     ids = matrix.shape[0]
@@ -128,7 +107,7 @@ def prepare_data(SRC_PATH):
     path_spk_list = list(zip(allpath_list, allspk_list))
     return path_spk_list
 
-def main():
+def main(args):
 
     # gpu configuration
     toolkits.initialize_GPU(args)
@@ -199,4 +178,26 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+
+    # ===========================================
+    #        Parse the argument
+    # ===========================================
+    import argparse
+    parser = argparse.ArgumentParser()
+    # set up training configuration.
+    parser.add_argument('--gpu', default='', type=str)
+    parser.add_argument('--resume', default=r'pretrained/weights.h5', type=str)
+    parser.add_argument('--data_path', default='4persons', type=str)
+    # set up network configuration.
+    parser.add_argument('--net', default='resnet34s', choices=['resnet34s', 'resnet34l'], type=str)
+    parser.add_argument('--ghost_cluster', default=2, type=int)
+    parser.add_argument('--vlad_cluster', default=8, type=int)
+    parser.add_argument('--bottleneck_dim', default=512, type=int)
+    parser.add_argument('--aggregation_mode', default='gvlad', choices=['avg', 'vlad', 'gvlad'], type=str)
+    # set up learning rate, training loss and optimizer.
+    parser.add_argument('--loss', default='softmax', choices=['softmax', 'amsoftmax'], type=str)
+    parser.add_argument('--test_type', default='normal', choices=['normal', 'hard', 'extend'], type=str)
+
+    args = parser.parse_args()
+
+    main(args)
